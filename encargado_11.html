@@ -1,0 +1,1422 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Stock Diario</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0f0f0f;
+    --surface: #1a1a1a;
+    --surface2: #222222;
+    --border: #2e2e2e;
+    --accent: #e8ff47;
+    --accent2: #ff6b35;
+    --text: #f0f0f0;
+    --text-muted: #666;
+    --text-dim: #999;
+    --success: #4ade80;
+    --warning: #fbbf24;
+    --danger: #f87171;
+    --empanadas: #e8ff47;
+    --pizzas: #ff6b35;
+    --extras: #7dd3fc;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* LOGIN */
+  #login-screen {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    background: var(--bg);
+  }
+
+  .login-logo {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.75rem;
+    letter-spacing: 0.3em;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    margin-bottom: 3rem;
+  }
+
+  .login-title {
+    font-size: 2rem;
+    font-weight: 300;
+    color: var(--text);
+    margin-bottom: 0.5rem;
+    text-align: center;
+  }
+
+  .login-subtitle {
+    font-size: 0.9rem;
+    color: var(--text-muted);
+    margin-bottom: 3rem;
+    text-align: center;
+  }
+
+  .pin-display {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 2.5rem;
+  }
+
+  .pin-dot {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    border: 2px solid var(--border);
+    transition: all 0.2s;
+  }
+
+  .pin-dot.filled {
+    background: var(--accent);
+    border-color: var(--accent);
+    transform: scale(1.1);
+  }
+
+  .numpad {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.75rem;
+    width: 280px;
+  }
+
+  .num-btn {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    font-size: 1.4rem;
+    font-weight: 500;
+    padding: 1.2rem;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.15s;
+    text-align: center;
+    user-select: none;
+  }
+
+  .num-btn:active { background: var(--surface2); transform: scale(0.95); }
+  .num-btn.empty { background: transparent; border-color: transparent; pointer-events: none; }
+  .num-btn.delete { font-size: 1rem; color: var(--text-muted); }
+
+  .login-error {
+    color: var(--danger);
+    font-size: 0.85rem;
+    margin-top: 1.5rem;
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+  .login-error.show { opacity: 1; }
+
+  /* APP PRINCIPAL */
+  #app { display: none; min-height: 100vh; }
+
+  /* HEADER */
+  .header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 1rem 1.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  .header-local {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.7rem;
+    letter-spacing: 0.2em;
+    color: var(--text-muted);
+    text-transform: uppercase;
+  }
+
+  .header-fecha {
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--accent);
+  }
+
+  .header-actions {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+  }
+
+  .btn-icon {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    padding: 0.5rem 0.75rem;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.75rem;
+    font-family: 'DM Mono', monospace;
+    letter-spacing: 0.05em;
+    transition: all 0.15s;
+  }
+  .btn-icon:active { background: var(--border); }
+
+  /* TABS */
+  .tabs {
+    display: flex;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .tabs::-webkit-scrollbar { display: none; }
+
+  .tab {
+    flex: 1;
+    min-width: 90px;
+    padding: 0.85rem 0.5rem;
+    text-align: center;
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--text-muted);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s;
+    white-space: nowrap;
+    letter-spacing: 0.03em;
+  }
+
+  .tab.active {
+    color: var(--accent);
+    border-bottom-color: var(--accent);
+  }
+
+  /* CONTENIDO */
+  .content { padding: 1rem; padding-bottom: 5rem; }
+
+  /* ESTADO DEL DÍA */
+  .day-status {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1rem 1.25rem;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .day-status-label {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    font-family: 'DM Mono', monospace;
+    letter-spacing: 0.1em;
+  }
+
+  .day-status-value {
+    font-size: 0.85rem;
+    font-weight: 600;
+    padding: 0.3rem 0.75rem;
+    border-radius: 20px;
+  }
+
+  .status-activa { background: rgba(74,222,128,0.15); color: var(--success); }
+  .status-desactiva { background: rgba(248,113,113,0.15); color: var(--danger); }
+
+  /* SECCIÓN DE PRODUCTOS */
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin: 1.25rem 0 0.75rem;
+  }
+
+  .section-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .section-title {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.7rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+
+  .section-total {
+    margin-left: auto;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--text-dim);
+  }
+
+  /* TARJETA DE PRODUCTO */
+  .product-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1rem 1.25rem;
+    margin-bottom: 0.625rem;
+    transition: border-color 0.2s;
+  }
+
+  .product-card.expanded { border-color: var(--accent); }
+
+  .product-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    user-select: none;
+  }
+
+  .product-name {
+    font-size: 0.95rem;
+    font-weight: 500;
+  }
+
+  .product-meta {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .stock-badge {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.85rem;
+    font-weight: 500;
+  }
+
+  .stock-ok { color: var(--success); }
+  .stock-low { color: var(--warning); }
+  .stock-zero { color: var(--danger); }
+
+  .expand-icon {
+    color: var(--text-muted);
+    font-size: 0.7rem;
+    transition: transform 0.2s;
+  }
+  .product-card.expanded .expand-icon { transform: rotate(180deg); }
+
+  /* CAMPOS DEL PRODUCTO */
+  .product-fields {
+    display: none;
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border);
+  }
+
+  .product-card.expanded .product-fields { display: block; }
+
+  .fields-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+  }
+
+  .field-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+  }
+
+  .field-group.full { grid-column: 1 / -1; }
+
+  .field-label {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    font-family: 'DM Mono', monospace;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .field-input {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    font-size: 1rem;
+    padding: 0.6rem 0.75rem;
+    width: 100%;
+    transition: border-color 0.2s;
+    -webkit-appearance: none;
+  }
+
+  .field-input:focus {
+    outline: none;
+    border-color: var(--accent);
+  }
+
+  .field-input:read-only {
+    color: var(--text-muted);
+    cursor: default;
+  }
+
+  .field-input.error { border-color: var(--danger); }
+
+  .field-hint {
+    font-size: 0.65rem;
+    color: var(--text-muted);
+  }
+
+  /* ROTACIÓN DE STOCK */
+  .rotation-section {
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border);
+  }
+
+  .rotation-title {
+    font-size: 0.65rem;
+    color: var(--text-muted);
+    font-family: 'DM Mono', monospace;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 0.6rem;
+  }
+
+  .rotation-grid {
+    display: flex;
+    gap: 0.4rem;
+    overflow-x: auto;
+    scrollbar-width: none;
+    padding-bottom: 4px;
+  }
+  .rotation-grid::-webkit-scrollbar { display: none; }
+
+  .rotation-day {
+    flex-shrink: 0;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.5rem 0.6rem;
+    min-width: 60px;
+    text-align: center;
+  }
+
+  .rotation-day.today {
+    border-color: var(--accent);
+    background: rgba(232,255,71,0.05);
+  }
+
+  .rotation-day-label {
+    font-size: 0.6rem;
+    color: var(--text-muted);
+    font-family: 'DM Mono', monospace;
+    margin-bottom: 0.25rem;
+  }
+
+  .rotation-day-stock {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.9rem;
+    font-weight: 500;
+  }
+
+  .rotation-day-lote {
+    font-size: 0.55rem;
+    color: var(--text-muted);
+    margin-top: 0.15rem;
+  }
+
+  /* CAJA */
+  .caja-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.25rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .caja-title {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.7rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 1rem;
+  }
+
+  .caja-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+  }
+
+  .caja-field { display: flex; flex-direction: column; gap: 0.4rem; }
+  .caja-field.full { grid-column: 1 / -1; }
+
+  .caja-label {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    font-family: 'DM Mono', monospace;
+    letter-spacing: 0.05em;
+  }
+
+  .caja-input {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    font-size: 1rem;
+    padding: 0.6rem 0.75rem;
+    width: 100%;
+    transition: border-color 0.2s;
+    -webkit-appearance: none;
+  }
+
+  .caja-input:focus { outline: none; border-color: var(--accent); }
+  .caja-input:read-only { color: var(--text-muted); }
+
+  .diferencia-display {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.6rem 0.75rem;
+    font-family: 'DM Mono', monospace;
+    font-size: 1rem;
+  }
+
+  .diferencia-pos { color: var(--success); }
+  .diferencia-neg { color: var(--danger); }
+  .diferencia-zero { color: var(--text-muted); }
+
+  /* RESUMEN */
+  .resumen-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+  }
+
+  .resumen-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1rem;
+  }
+
+  .resumen-label {
+    font-size: 0.65rem;
+    color: var(--text-muted);
+    font-family: 'DM Mono', monospace;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 0.5rem;
+  }
+
+  .resumen-value {
+    font-family: 'DM Mono', monospace;
+    font-size: 1.4rem;
+    font-weight: 500;
+  }
+
+  .resumen-sub {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    margin-top: 0.2rem;
+  }
+
+  /* BOTÓN GUARDAR */
+  .save-bar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 1rem;
+    background: var(--bg);
+    border-top: 1px solid var(--border);
+    z-index: 200;
+  }
+
+  .save-btn {
+    width: 100%;
+    background: var(--accent);
+    color: #0f0f0f;
+    border: none;
+    border-radius: 12px;
+    padding: 1rem;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.9rem;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .save-btn:active { transform: scale(0.98); background: #d4eb3a; }
+  .save-btn:disabled { background: var(--border); color: var(--text-muted); cursor: not-allowed; }
+
+  /* TOAST */
+  .toast {
+    position: fixed;
+    top: 1rem;
+    left: 50%;
+    transform: translateX(-50%) translateY(-100px);
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 0.75rem 1.25rem;
+    border-radius: 10px;
+    font-size: 0.85rem;
+    z-index: 1000;
+    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    white-space: nowrap;
+  }
+
+  .toast.show { transform: translateX(-50%) translateY(0); }
+  .toast.success { border-color: var(--success); color: var(--success); }
+  .toast.error { border-color: var(--danger); color: var(--danger); }
+
+  /* LOADING */
+  .loading-overlay {
+    position: fixed;
+    inset: 0;
+    background: var(--bg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 500;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .loading-spinner {
+    width: 32px;
+    height: 32px;
+    border: 2px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+
+  .loading-text {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    font-family: 'DM Mono', monospace;
+    letter-spacing: 0.1em;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* EMPTY STATE */
+  .empty-state {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: var(--text-muted);
+  }
+
+  .empty-state-icon { font-size: 2rem; margin-bottom: 0.75rem; }
+  .empty-state-text { font-size: 0.9rem; }
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login-screen">
+  <div class="login-logo">Sistema de Gestión</div>
+  <h1 class="login-title">Ingresá tu PIN</h1>
+  <p class="login-subtitle">Acceso para encargados</p>
+
+  <div class="pin-display">
+    <div class="pin-dot" id="dot-0"></div>
+    <div class="pin-dot" id="dot-1"></div>
+    <div class="pin-dot" id="dot-2"></div>
+    <div class="pin-dot" id="dot-3"></div>
+  </div>
+
+  <div class="numpad">
+    <button class="num-btn" onclick="addPin('1')">1</button>
+    <button class="num-btn" onclick="addPin('2')">2</button>
+    <button class="num-btn" onclick="addPin('3')">3</button>
+    <button class="num-btn" onclick="addPin('4')">4</button>
+    <button class="num-btn" onclick="addPin('5')">5</button>
+    <button class="num-btn" onclick="addPin('6')">6</button>
+    <button class="num-btn" onclick="addPin('7')">7</button>
+    <button class="num-btn" onclick="addPin('8')">8</button>
+    <button class="num-btn" onclick="addPin('9')">9</button>
+    <button class="num-btn empty"></button>
+    <button class="num-btn" onclick="addPin('0')">0</button>
+    <button class="num-btn delete" onclick="deletePin()">⌫</button>
+  </div>
+
+  <div class="login-error" id="login-error">PIN incorrecto. Intentá de nuevo.</div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <div id="loading-overlay" class="loading-overlay">
+    <div class="loading-spinner"></div>
+    <div class="loading-text">Cargando...</div>
+  </div>
+
+  <div class="header">
+    <div>
+      <div class="header-local" id="header-local">—</div>
+    </div>
+    <div class="header-fecha" id="header-fecha">—</div>
+    <div class="header-actions">
+      <button class="btn-icon" onclick="logout()">Salir</button>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <div class="tab active" onclick="switchTab('stock')">Stock</div>
+    <div class="tab" onclick="switchTab('caja')">Caja</div>
+    <div class="tab" onclick="switchTab('resumen')">Resumen</div>
+  </div>
+
+  <div class="content">
+
+    <!-- TAB STOCK -->
+    <div id="tab-stock">
+      <div class="day-status">
+        <span class="day-status-label">Estado del día</span>
+        <span class="day-status-value status-activa" id="day-status-badge">Activa</span>
+      </div>
+      <div id="products-container"></div>
+    </div>
+
+    <!-- TAB CAJA -->
+    <div id="tab-caja" style="display:none">
+      <div class="caja-card">
+        <div class="caja-title">Caja del día</div>
+        <div class="caja-grid">
+          <div class="caja-field">
+            <div class="caja-label">Saldo Inicial</div>
+            <input class="caja-input" type="number" id="caja-saldo-inicial" readonly>
+          </div>
+          <div class="caja-field">
+            <div class="caja-label">Ventas del Día</div>
+            <div class="caja-input" id="caja-ventas" style="display:flex;align-items:center">—</div>
+          </div>
+          <div class="caja-field">
+            <div class="caja-label">Saldo Real</div>
+            <input class="caja-input" type="number" id="caja-saldo-real" placeholder="0" oninput="calcDiferencia()">
+          </div>
+          <div class="caja-field">
+            <div class="caja-label">Diferencia</div>
+            <div class="diferencia-display diferencia-zero" id="caja-diferencia">$ 0</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="caja-card">
+        <div class="caja-title">Gastos</div>
+        <div class="caja-grid">
+          <div class="caja-field"><div class="caja-label">Embalaje</div><input class="caja-input" type="number" id="gasto-embalaje" placeholder="0"></div>
+          <div class="caja-field"><div class="caja-label">Limpieza</div><input class="caja-input" type="number" id="gasto-limpieza" placeholder="0"></div>
+          <div class="caja-field"><div class="caja-label">Panes</div><input class="caja-input" type="number" id="gasto-panes" placeholder="0"></div>
+          <div class="caja-field"><div class="caja-label">Bebidas / Aguas</div><input class="caja-input" type="number" id="gasto-bebidas" placeholder="0"></div>
+          <div class="caja-field"><div class="caja-label">Varios 1</div><input class="caja-input" type="number" id="gasto-varios1" placeholder="0"></div>
+          <div class="caja-field"><div class="caja-label">Varios 2</div><input class="caja-input" type="number" id="gasto-varios2" placeholder="0"></div>
+        </div>
+      </div>
+
+      <div class="caja-card">
+        <div class="caja-title">Retiros</div>
+        <div class="caja-grid">
+          <div class="caja-field"><div class="caja-label">Retiro 1</div><input class="caja-input" type="number" id="retiro-1" placeholder="0"></div>
+          <div class="caja-field"><div class="caja-label">Nombre</div><input class="caja-input" type="text" id="retiro-1-nombre" placeholder="—"></div>
+          <div class="caja-field"><div class="caja-label">Retiro 2</div><input class="caja-input" type="number" id="retiro-2" placeholder="0"></div>
+          <div class="caja-field"><div class="caja-label">Nombre</div><input class="caja-input" type="text" id="retiro-2-nombre" placeholder="—"></div>
+          <div class="caja-field"><div class="caja-label">Retiro 3</div><input class="caja-input" type="number" id="retiro-3" placeholder="0"></div>
+          <div class="caja-field"><div class="caja-label">Nombre</div><input class="caja-input" type="text" id="retiro-3-nombre" placeholder="—"></div>
+          <div class="caja-field"><div class="caja-label">Banco 1</div><input class="caja-input" type="number" id="banco-1" placeholder="0"></div>
+          <div class="caja-field"><div class="caja-label">Banco 2</div><input class="caja-input" type="number" id="banco-2" placeholder="0"></div>
+        </div>
+      </div>
+
+      <div class="caja-card">
+        <div class="caja-title">Vales y Feriados</div>
+        <div class="caja-grid">
+          <div class="caja-field"><div class="caja-label">Vale 1</div><input class="caja-input" type="number" id="vale-1" placeholder="0"></div>
+          <div class="caja-field"><div class="caja-label">Vale 2</div><input class="caja-input" type="number" id="vale-2" placeholder="0"></div>
+          <div class="caja-field"><div class="caja-label">Vale 3</div><input class="caja-input" type="number" id="vale-3" placeholder="0"></div>
+          <div class="caja-field"><div class="caja-label">Vale 4</div><input class="caja-input" type="number" id="vale-4" placeholder="0"></div>
+          <div class="caja-field"><div class="caja-label">Feriado 1</div><input class="caja-input" type="number" id="feriado-1" placeholder="0"></div>
+          <div class="caja-field"><div class="caja-label">Feriado 2</div><input class="caja-input" type="number" id="feriado-2" placeholder="0"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB RESUMEN -->
+    <div id="tab-resumen" style="display:none">
+      <div class="resumen-grid">
+        <div class="resumen-card">
+          <div class="resumen-label">Ventas hoy</div>
+          <div class="resumen-value" id="res-ventas">—</div>
+          <div class="resumen-sub">unidades totales</div>
+        </div>
+        <div class="resumen-card">
+          <div class="resumen-label">Stock final</div>
+          <div class="resumen-value" id="res-stock">—</div>
+          <div class="resumen-sub">unidades totales</div>
+        </div>
+        <div class="resumen-card">
+          <div class="resumen-label">Roturas</div>
+          <div class="resumen-value" id="res-roturas" style="color:var(--danger)">—</div>
+          <div class="resumen-sub">empanadas</div>
+        </div>
+        <div class="resumen-card">
+          <div class="resumen-label">Dif. recepción</div>
+          <div class="resumen-value" id="res-dif-recepcion">—</div>
+          <div class="resumen-sub">unidades</div>
+        </div>
+      </div>
+      <div id="resumen-productos"></div>
+    </div>
+
+  </div>
+
+  <div class="save-bar">
+    <button class="save-btn" onclick="guardarDia()" id="save-btn">Guardar cambios</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// =============================================
+// CONFIGURACIÓN SUPABASE
+// =============================================
+const SUPABASE_URL = 'https://enbpqmoqcdvbxqmknfhg.supabase.co'; // reemplazar
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVuYnBxbW9xY2R2YnhxbWtuZmhnIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NjgwODAyOSwiZXhwIjoyMDkyMzg0MDI5fQ.Pl-LPX6vD3giHE_ruc88o5vy49oWoOjLxpKcZUye6nI'; // reemplazar
+
+const headers = {
+  'Content-Type': 'application/json',
+  'apikey': SUPABASE_KEY,
+  'Authorization': `Bearer ${SUPABASE_KEY}`
+};
+
+async function sb(path, options = {}) {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
+    headers: { ...headers, ...(options.headers || {}) },
+    ...options
+  });
+  if (!res.ok) {
+    const err = await res.json();
+    throw new Error(err.message || 'Error en la base de datos');
+  }
+  if (res.status === 204) return null;
+  return res.json();
+}
+
+// =============================================
+// ESTADO GLOBAL
+// =============================================
+let state = {
+  local: null,
+  dia: null,
+  productos: [],
+  stockDiario: {},
+  lotes: [],
+  activeTab: 'stock'
+};
+
+let pinBuffer = '';
+
+// =============================================
+// LOGIN
+// =============================================
+function addPin(digit) {
+  if (pinBuffer.length >= 4) return;
+  pinBuffer += digit;
+  updatePinDisplay();
+  if (pinBuffer.length === 4) {
+    setTimeout(validatePin, 200);
+  }
+}
+
+function deletePin() {
+  pinBuffer = pinBuffer.slice(0, -1);
+  updatePinDisplay();
+  document.getElementById('login-error').classList.remove('show');
+}
+
+function updatePinDisplay() {
+  for (let i = 0; i < 4; i++) {
+    const dot = document.getElementById(`dot-${i}`);
+    dot.classList.toggle('filled', i < pinBuffer.length);
+  }
+}
+
+async function validatePin() {
+  try {
+    const locales = await sb(`locales?pin=eq.${pinBuffer}&activo=eq.true&select=*`);
+    if (locales && locales.length > 0) {
+      state.local = locales[0];
+      document.getElementById('login-screen').style.display = 'none';
+      document.getElementById('app').style.display = 'block';
+      await initApp();
+    } else {
+      document.getElementById('login-error').classList.add('show');
+      pinBuffer = '';
+      updatePinDisplay();
+      setTimeout(() => {
+        document.getElementById('login-error').classList.remove('show');
+      }, 2000);
+    }
+  } catch (e) {
+    showToast('Error de conexión', 'error');
+    pinBuffer = '';
+    updatePinDisplay();
+  }
+}
+
+function logout() {
+  state = { local: null, dia: null, productos: [], stockDiario: {}, lotes: [], activeTab: 'stock' };
+  pinBuffer = '';
+  updatePinDisplay();
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('login-screen').style.display = 'flex';
+}
+
+// =============================================
+// INICIALIZACIÓN
+// =============================================
+async function initApp() {
+  showLoading(true);
+  try {
+    const hoy = getTodayDate();
+
+    // Actualizar header
+    document.getElementById('header-local').textContent = state.local.nombre;
+    document.getElementById('header-fecha').textContent = formatFecha(hoy);
+
+    // Obtener o crear el día de hoy
+    await getOrCreateDia(hoy);
+
+    // Obtener productos del local
+    await loadProductos();
+
+    // Obtener stock diario
+    await loadStockDiario();
+
+    // Obtener lotes (últimos 7 días)
+    await loadLotes();
+
+    // Renderizar
+    renderProducts();
+    updateResumen();
+
+    showLoading(false);
+  } catch (e) {
+    showToast('Error al cargar los datos: ' + e.message, 'error');
+    showLoading(false);
+  }
+}
+
+async function getOrCreateDia(fecha) {
+  let dias = await sb(`dias?local_id=eq.${state.local.id}&fecha=eq.${fecha}&select=*`);
+
+  if (!dias || dias.length === 0) {
+    // Buscar stock final del día anterior para usarlo como inicial
+    const diaAnterior = await getDiaAnterior(fecha);
+
+    const nuevo = await sb('dias', {
+      method: 'POST',
+      headers: { 'Prefer': 'return=representation' },
+      body: JSON.stringify({
+        local_id: state.local.id,
+        fecha: fecha,
+        estado: 'Activa',
+        saldo_inicial_caja: diaAnterior ? diaAnterior.saldo_real_caja || 0 : 0
+      })
+    });
+    state.dia = nuevo[0];
+
+    // Si hay día anterior, copiar stock final como stock inicial
+    if (diaAnterior) {
+      await copyStockFromPrevious(diaAnterior.id, state.dia.id);
+    }
+  } else {
+    state.dia = dias[0];
+  }
+
+  // Actualizar UI caja
+  document.getElementById('caja-saldo-inicial').value = state.dia.saldo_inicial_caja || 0;
+  if (state.dia.saldo_real_caja !== null) {
+    document.getElementById('caja-saldo-real').value = state.dia.saldo_real_caja;
+    calcDiferencia();
+  }
+}
+
+async function getDiaAnterior(fecha) {
+  const dias = await sb(`dias?local_id=eq.${state.local.id}&fecha=lt.${fecha}&estado=eq.Activa&order=fecha.desc&limit=1&select=*`);
+  return dias && dias.length > 0 ? dias[0] : null;
+}
+
+async function copyStockFromPrevious(diaAnteriorId, diaActualId) {
+  const stockAnterior = await sb(`stock_diario?dia_id=eq.${diaAnteriorId}&select=*`);
+  if (!stockAnterior || stockAnterior.length === 0) return;
+
+  const nuevosRegistros = stockAnterior.map(s => ({
+    dia_id: diaActualId,
+    producto_id: s.producto_id,
+    stock_inicial: s.stock_final || 0,
+    pedido: 0,
+    diferencia_recepcion: 0,
+    movimiento_interno: 0,
+    roturas: 0,
+    consumo: 0,
+    stock_final: s.stock_final || 0,
+    venta_diaria: 0
+  }));
+
+  await sb('stock_diario', {
+    method: 'POST',
+    headers: { 'Prefer': 'return=minimal' },
+    body: JSON.stringify(nuevosRegistros)
+  });
+}
+
+async function loadProductos() {
+  const data = await sb(`productos_por_local?local_id=eq.${state.local.id}&activo=eq.true&select=producto_id,productos(id,nombre,categoria)`);
+  state.productos = data.map(d => d.productos).sort((a, b) => {
+    const orden = { 'Empanadas': 0, 'Pizzas': 1, 'Extras': 2 };
+    return orden[a.categoria] - orden[b.categoria] || a.nombre.localeCompare(b.nombre);
+  });
+}
+
+async function loadStockDiario() {
+  const data = await sb(`stock_diario?dia_id=eq.${state.dia.id}&select=*`);
+  state.stockDiario = {};
+  (data || []).forEach(s => { state.stockDiario[s.producto_id] = s; });
+}
+
+async function loadLotes() {
+  const hace7dias = getDateDaysAgo(7);
+  const data = await sb(`lotes?local_id=eq.${state.local.id}&fecha_ingreso=gte.${hace7dias}&select=*`);
+  state.lotes = data || [];
+}
+
+// =============================================
+// RENDER PRODUCTOS
+// =============================================
+function renderProducts() {
+  const container = document.getElementById('products-container');
+  const categorias = ['Empanadas', 'Pizzas', 'Extras'];
+  const colores = { Empanadas: 'var(--empanadas)', Pizzas: 'var(--pizzas)', Extras: 'var(--extras)' };
+
+  let html = '';
+
+  categorias.forEach(cat => {
+    const prods = state.productos.filter(p => p.categoria === cat);
+    if (prods.length === 0) return;
+
+    const totalVentas = prods.reduce((sum, p) => {
+      return sum + (state.stockDiario[p.id]?.venta_diaria || 0);
+    }, 0);
+
+    html += `
+      <div class="section-header">
+        <div class="section-dot" style="background:${colores[cat]}"></div>
+        <div class="section-title">${cat}</div>
+        <div class="section-total">${totalVentas} vendidas</div>
+      </div>
+    `;
+
+    prods.forEach(p => {
+      const s = state.stockDiario[p.id] || {};
+      const stock = s.stock_final ?? s.stock_inicial ?? 0;
+      const stockClass = stock === 0 ? 'stock-zero' : stock < 20 ? 'stock-low' : 'stock-ok';
+
+      // Rotación últimos 7 días
+      const lotesProducto = state.lotes
+        .filter(l => l.producto_id === p.id)
+        .sort((a, b) => new Date(a.fecha_ingreso) - new Date(b.fecha_ingreso));
+
+      const rotacionHtml = lotesProducto.length > 0 ? `
+        <div class="rotation-section">
+          <div class="rotation-title">Rotación de Stock</div>
+          <div class="rotation-grid">
+            ${lotesProducto.map(l => `
+              <div class="rotation-day">
+                <div class="rotation-day-label">${formatDiaCorto(l.fecha_ingreso)}</div>
+                <div class="rotation-day-stock">${l.cantidad}</div>
+                <div class="rotation-day-lote">${l.numero_lote || '—'}</div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      ` : '';
+
+      html += `
+        <div class="product-card" id="card-${p.id}">
+          <div class="product-header" onclick="toggleCard(${p.id})">
+            <div class="product-name">${p.nombre}</div>
+            <div class="product-meta">
+              <span class="stock-badge ${stockClass}">${stock}</span>
+              <span class="expand-icon">▼</span>
+            </div>
+          </div>
+          <div class="product-fields">
+            <div class="fields-grid">
+              <div class="field-group">
+                <div class="field-label">Stock Inicial</div>
+                <input class="field-input" type="number" id="si-${p.id}" 
+                  value="${s.stock_inicial ?? ''}" readonly placeholder="—">
+              </div>
+              <div class="field-group">
+                <div class="field-label">Pedido</div>
+                <input class="field-input" type="number" id="ped-${p.id}" 
+                  value="${s.pedido || ''}" placeholder="0"
+                  oninput="recalcStock(${p.id})">
+              </div>
+              <div class="field-group">
+                <div class="field-label">Lote</div>
+                <input class="field-input" type="text" id="lote-${p.id}" 
+                  value="${getLoteActual(p.id)}" placeholder="—">
+              </div>
+              <div class="field-group">
+                <div class="field-label">Dif. Recepción</div>
+                <input class="field-input" type="number" id="dr-${p.id}" 
+                  value="${s.diferencia_recepcion || ''}" placeholder="0"
+                  oninput="recalcStock(${p.id})">
+              </div>
+              <div class="field-group">
+                <div class="field-label">Mov. Interno</div>
+                <input class="field-input" type="number" id="mi-${p.id}" 
+                  value="${s.movimiento_interno || ''}" placeholder="0"
+                  oninput="recalcStock(${p.id})">
+              </div>
+              <div class="field-group">
+                <div class="field-label">Roturas</div>
+                <input class="field-input" type="number" id="rot-${p.id}" 
+                  value="${s.roturas || ''}" placeholder="0"
+                  oninput="recalcStock(${p.id})">
+              </div>
+              <div class="field-group">
+                <div class="field-label">Consumo</div>
+                <input class="field-input" type="number" id="con-${p.id}" 
+                  value="${s.consumo || ''}" placeholder="0"
+                  oninput="recalcStock(${p.id})">
+              </div>
+              <div class="field-group">
+                <div class="field-label">Venta Diaria</div>
+                <input class="field-input" type="number" id="vd-${p.id}" 
+                  value="${s.venta_diaria || ''}" placeholder="0"
+                  oninput="updateResumen()">
+              </div>
+              <div class="field-group full">
+                <div class="field-label">Stock Final</div>
+                <input class="field-input" type="number" id="sf-${p.id}" 
+                  value="${s.stock_final ?? ''}" placeholder="0"
+                  oninput="validateStockFinal(${p.id})">
+                <div class="field-hint" id="hint-${p.id}"></div>
+              </div>
+            </div>
+            ${rotacionHtml}
+          </div>
+        </div>
+      `;
+    });
+  });
+
+  container.innerHTML = html;
+}
+
+function toggleCard(productoId) {
+  const card = document.getElementById(`card-${productoId}`);
+  card.classList.toggle('expanded');
+}
+
+function getLoteActual(productoId) {
+  const lote = state.lotes
+    .filter(l => l.producto_id === productoId)
+    .sort((a, b) => new Date(b.fecha_ingreso) - new Date(a.fecha_ingreso))[0];
+  return lote?.numero_lote || '';
+}
+
+// =============================================
+// CÁLCULOS
+// =============================================
+function recalcStock(productoId) {
+  const si = parseFloat(document.getElementById(`si-${productoId}`)?.value) || 0;
+  const ped = parseFloat(document.getElementById(`ped-${productoId}`)?.value) || 0;
+  const dr = parseFloat(document.getElementById(`dr-${productoId}`)?.value) || 0;
+  const mi = parseFloat(document.getElementById(`mi-${productoId}`)?.value) || 0;
+  const rot = parseFloat(document.getElementById(`rot-${productoId}`)?.value) || 0;
+  const con = parseFloat(document.getElementById(`con-${productoId}`)?.value) || 0;
+  const vd = parseFloat(document.getElementById(`vd-${productoId}`)?.value) || 0;
+
+  const sfCalc = si + ped + dr + mi - rot - con - vd;
+  const sfInput = document.getElementById(`sf-${productoId}`);
+  if (sfInput && !sfInput.dataset.manualOverride) {
+    sfInput.value = Math.max(0, sfCalc);
+  }
+
+  const hint = document.getElementById(`hint-${productoId}`);
+  if (hint) {
+    if (sfCalc < 0) {
+      hint.textContent = '⚠ El stock calculado es negativo. Revisá los valores.';
+      hint.style.color = 'var(--danger)';
+    } else {
+      hint.textContent = '';
+    }
+  }
+
+  updateResumen();
+}
+
+function validateStockFinal(productoId) {
+  const sfInput = document.getElementById(`sf-${productoId}`);
+  if (parseFloat(sfInput.value) < 0) {
+    sfInput.value = 0;
+    showToast('El stock no puede ser negativo', 'error');
+  }
+  sfInput.dataset.manualOverride = '1';
+  updateResumen();
+}
+
+function calcDiferencia() {
+  const inicial = parseFloat(document.getElementById('caja-saldo-inicial').value) || 0;
+  const ventas = getTotalVentas();
+  const real = parseFloat(document.getElementById('caja-saldo-real').value) || 0;
+  const teorico = inicial + ventas;
+  const dif = real - teorico;
+
+  const el = document.getElementById('caja-diferencia');
+  el.textContent = `$ ${formatNum(dif)}`;
+  el.className = `diferencia-display ${dif > 0 ? 'diferencia-pos' : dif < 0 ? 'diferencia-neg' : 'diferencia-zero'}`;
+}
+
+function getTotalVentas() {
+  return state.productos.reduce((sum, p) => {
+    return sum + (parseFloat(document.getElementById(`vd-${p.id}`)?.value) || 0);
+  }, 0);
+}
+
+function updateResumen() {
+  let totalVentas = 0, totalStock = 0, totalRoturas = 0, totalDifRec = 0;
+
+  state.productos.forEach(p => {
+    totalVentas += parseFloat(document.getElementById(`vd-${p.id}`)?.value) || 0;
+    totalStock += parseFloat(document.getElementById(`sf-${p.id}`)?.value) || 0;
+    if (p.categoria === 'Empanadas') {
+      totalRoturas += parseFloat(document.getElementById(`rot-${p.id}`)?.value) || 0;
+      totalDifRec += parseFloat(document.getElementById(`dr-${p.id}`)?.value) || 0;
+    }
+  });
+
+  document.getElementById('res-ventas').textContent = totalVentas;
+  document.getElementById('res-stock').textContent = totalStock;
+  document.getElementById('res-roturas').textContent = totalRoturas;
+  document.getElementById('res-dif-recepcion').textContent = totalDifRec >= 0 ? `+${totalDifRec}` : totalDifRec;
+
+  const ventasEl = document.getElementById('caja-ventas');
+  if (ventasEl) ventasEl.textContent = `${totalVentas} u.`;
+}
+
+// =============================================
+// GUARDAR
+// =============================================
+async function guardarDia() {
+  const btn = document.getElementById('save-btn');
+  btn.disabled = true;
+  btn.textContent = 'Guardando...';
+
+  try {
+    // Guardar stock por producto
+    for (const p of state.productos) {
+      const si = parseFloat(document.getElementById(`si-${p.id}`)?.value) || 0;
+      const ped = parseFloat(document.getElementById(`ped-${p.id}`)?.value) || 0;
+      const dr = parseFloat(document.getElementById(`dr-${p.id}`)?.value) || 0;
+      const mi = parseFloat(document.getElementById(`mi-${p.id}`)?.value) || 0;
+      const rot = parseFloat(document.getElementById(`rot-${p.id}`)?.value) || 0;
+      const con = parseFloat(document.getElementById(`con-${p.id}`)?.value) || 0;
+      const vd = parseFloat(document.getElementById(`vd-${p.id}`)?.value) || 0;
+      const sf = parseFloat(document.getElementById(`sf-${p.id}`)?.value) ?? (si + ped + dr + mi - rot - con - vd);
+      const loteVal = document.getElementById(`lote-${p.id}`)?.value || null;
+
+      const stockData = {
+        dia_id: state.dia.id,
+        producto_id: p.id,
+        stock_inicial: si,
+        pedido: ped,
+        diferencia_recepcion: dr,
+        movimiento_interno: mi,
+        roturas: rot,
+        consumo: con,
+        stock_final: Math.max(0, sf),
+        venta_diaria: vd,
+        updated_at: new Date().toISOString()
+      };
+
+      const existing = state.stockDiario[p.id];
+      if (existing) {
+        await sb(`stock_diario?id=eq.${existing.id}`, {
+          method: 'PATCH',
+          headers: { 'Prefer': 'return=minimal' },
+          body: JSON.stringify(stockData)
+        });
+      } else {
+        await sb('stock_diario', {
+          method: 'POST',
+          headers: { 'Prefer': 'return=minimal' },
+          body: JSON.stringify(stockData)
+        });
+      }
+
+      // Guardar lote si se ingresó
+      if (loteVal && ped > 0) {
+        await sb('lotes', {
+          method: 'POST',
+          headers: { 'Prefer': 'return=minimal' },
+          body: JSON.stringify({
+            local_id: state.local.id,
+            producto_id: p.id,
+            numero_lote: loteVal,
+            fecha_ingreso: getTodayDate(),
+            cantidad: ped
+          })
+        });
+      }
+    }
+
+    // Guardar caja
+    const saldoReal = parseFloat(document.getElementById('caja-saldo-real').value) || null;
+    await sb(`dias?id=eq.${state.dia.id}`, {
+      method: 'PATCH',
+      headers: { 'Prefer': 'return=minimal' },
+      body: JSON.stringify({ saldo_real_caja: saldoReal })
+    });
+
+    // Guardar gastos
+    const gastosData = {
+      dia_id: state.dia.id,
+      embalaje: parseFloat(document.getElementById('gasto-embalaje').value) || 0,
+      limpieza: parseFloat(document.getElementById('gasto-limpieza').value) || 0,
+      panes: parseFloat(document.getElementById('gasto-panes').value) || 0,
+      bebidas_aguas: parseFloat(document.getElementById('gasto-bebidas').value) || 0,
+      varios_1: parseFloat(document.getElementById('gasto-varios1').value) || 0,
+      varios_2: parseFloat(document.getElementById('gasto-varios2').value) || 0
+    };
+
+    const gastosExist = await sb(`gastos_diarios?dia_id=eq.${state.dia.id}&select=id`);
+    if (gastosExist && gastosExist.length > 0) {
+      await sb(`gastos_diarios?dia_id=eq.${state.dia.id}`, {
+        method: 'PATCH', headers: { 'Prefer': 'return=minimal' },
+        body: JSON.stringify(gastosData)
+      });
+    } else {
+      await sb('gastos_diarios', {
+        method: 'POST', headers: { 'Prefer': 'return=minimal' },
+        body: JSON.stringify(gastosData)
+      });
+    }
+
+    // Guardar retiros
+    const retirosData = {
+      dia_id: state.dia.id,
+      retiro_1: parseFloat(document.getElementById('retiro-1').value) || 0,
+      retiro_1_nombre: document.getElementById('retiro-1-nombre').value || null,
+      retiro_2: parseFloat(document.getElementById('retiro-2').value) || 0,
+      retiro_2_nombre: document.getElementById('retiro-2-nombre').value || null,
+      retiro_3: parseFloat(document.getElementById('retiro-3').value) || 0,
+      retiro_3_nombre: document.getElementById('retiro-3-nombre').value || null,
+      banco_1: parseFloat(document.getElementById('banco-1').value) || 0,
+      banco_2: parseFloat(document.getElementById('banco-2').value) || 0
+    };
+
+    const retirosExist = await sb(`retiros_diarios?dia_id=eq.${state.dia.id}&select=id`);
+    if (retirosExist && retirosExist.length > 0) {
+      await sb(`retiros_diarios?dia_id=eq.${state.dia.id}`, {
+        method: 'PATCH', headers: { 'Prefer': 'return=minimal' },
+        body: JSON.stringify(retirosData)
+      });
+    } else {
+      await sb('retiros_diarios', {
+        method: 'POST', headers: { 'Prefer': 'return=minimal' },
+        body: JSON.stringify(retirosData)
+      });
+    }
+
+    // Recargar estado
+    await loadStockDiario();
+    renderProducts();
+
+    showToast('Guardado correctamente ✓', 'success');
+  } catch (e) {
+    showToast('Error al guardar: ' + e.message, 'error');
+  }
+
+  btn.disabled = false;
+  btn.textContent = 'Guardar cambios';
+}
+
+// =============================================
+// TABS
+// =============================================
+function switchTab(tab) {
+  state.activeTab = tab;
+  document.querySelectorAll('.tab').forEach((t, i) => {
+    const tabs = ['stock', 'caja', 'resumen'];
+    t.classList.toggle('active', tabs[i] === tab);
+  });
+  document.getElementById('tab-stock').style.display = tab === 'stock' ? 'block' : 'none';
+  document.getElementById('tab-caja').style.display = tab === 'caja' ? 'block' : 'none';
+  document.getElementById('tab-resumen').style.display = tab === 'resumen' ? 'block' : 'none';
+
+  if (tab === 'resumen') updateResumen();
+  if (tab === 'caja') calcDiferencia();
+}
+
+// =============================================
+// UTILIDADES
+// =============================================
+function getTodayDate() {
+  return new Date().toISOString().split('T')[0];
+}
+
+function getDateDaysAgo(days) {
+  const d = new Date();
+  d.setDate(d.getDate() - days);
+  return d.toISOString().split('T')[0];
+}
+
+function formatFecha(dateStr) {
+  const d = new Date(dateStr + 'T12:00:00');
+  return d.toLocaleDateString('es-AR', { weekday: 'short', day: 'numeric', month: 'short' });
+}
+
+function formatDiaCorto(dateStr) {
+  const d = new Date(dateStr + 'T12:00:00');
+  return d.toLocaleDateString('es-AR', { day: 'numeric', month: 'numeric' });
+}
+
+function formatNum(n) {
+  return Math.abs(n).toLocaleString('es-AR');
+}
+
+function showLoading(show) {
+  document.getElementById('loading-overlay').style.display = show ? 'flex' : 'none';
+}
+
+function showToast(msg, type = '') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = `toast ${type} show`;
+  setTimeout(() => { t.classList.remove('show'); }, 2500);
+}
+</script>
+</body>
+</html>
